@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trending — Google Trends Recap</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="blob blob1"></div>
+  <div class="blob blob2"></div>
+
+  <div class="container">
+    <h1>Trending<span class="accent">.</span></h1>
+    <p class="subtitle">Google Trends — real-time recap</p>
+
+    <div class="controls">
+      <div class="country-wrap">
+        <span class="detected-badge" id="detectedBadge" hidden>📍 Auto-detected</span>
+        <select id="countrySelect">
+          <option value="US">🇺🇸 United States</option>
+          <option value="TW">🇹🇼 Taiwan</option>
+          <option value="GB">🇬🇧 United Kingdom</option>
+          <option value="AU">🇦🇺 Australia</option>
+          <option value="CA">🇨🇦 Canada</option>
+          <option value="DE">🇩🇪 Germany</option>
+          <option value="FR">🇫🇷 France</option>
+          <option value="JP">🇯🇵 Japan</option>
+          <option value="KR">🇰🇷 South Korea</option>
+          <option value="BR">🇧🇷 Brazil</option>
+          <option value="IN">🇮🇳 India</option>
+          <option value="MX">🇲🇽 Mexico</option>
+          <option value="IT">🇮🇹 Italy</option>
+          <option value="ES">🇪🇸 Spain</option>
+          <option value="NL">🇳🇱 Netherlands</option>
+          <option value="PL">🇵🇱 Poland</option>
+          <option value="AR">🇦🇷 Argentina</option>
+          <option value="ZA">🇿🇦 South Africa</option>
+          <option value="NG">🇳🇬 Nigeria</option>
+          <option value="SG">🇸🇬 Singapore</option>
+        </select>
+      </div>
+      <button id="refreshBtn">↻ Refresh</button>
+    </div>
+
+    <div class="meta" id="meta" hidden>
+      Updated <span id="updatedAt"></span>
+    </div>
+
+    <div class="loader" id="loader" hidden>
+      <div class="spinner"></div>
+      <span>Fetching trends…</span>
+    </div>
+
+    <div class="error" id="error" hidden></div>
+
+    <div class="trends-grid" id="trendsGrid"></div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
