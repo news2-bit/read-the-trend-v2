@@ -240,3 +240,73 @@ button#refreshBtn:disabled { opacity: 0.4; cursor: not-allowed; }
   color: rgba(255,255,255,0.2);
   margin-top: 0.2rem;
 }
+
+/* Auth area */
+#authArea {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+#connectBtn {
+  background: linear-gradient(135deg, #ec4899, #8b5cf6);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.45rem 1rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  font-family: inherit;
+  transition: opacity 0.2s;
+}
+#connectBtn:hover { opacity: 0.85; }
+
+#connectedBadge {
+  font-size: 0.82rem;
+  color: rgba(255,255,255,0.55);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+#disconnectBtn {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.35);
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0 0.2rem;
+  font-family: inherit;
+}
+#disconnectBtn:hover { color: rgba(255,255,255,0.7); }
+
+/* Summarize button */
+.summarize-btn {
+  margin-top: 0.75rem;
+  background: linear-gradient(135deg, #7c3aed, #4f46e5);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.35rem 0.85rem;
+  font-size: 0.78rem;
+  cursor: pointer;
+  font-family: inherit;
+  transition: opacity 0.2s;
+  display: block;
+}
+.summarize-btn:hover:not(:disabled) { opacity: 0.85; }
+.summarize-btn:disabled { opacity: 0.5; cursor: default; }
+
+/* AI summary block */
+.ai-summary {
+  margin-top: 0.6rem;
+  padding: 0.65rem 0.8rem;
+  background: rgba(124, 58, 237, 0.08);
+  border-left: 3px solid #7c3aed;
+  border-radius: 0 6px 6px 0;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: rgba(255,255,255,0.82);
+}

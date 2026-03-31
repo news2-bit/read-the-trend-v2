@@ -1,16 +1,59 @@
-const PROXY = 'https://api.allorigins.win/raw?url=';
-const TRENDS_RSS = geo => `https://trends.google.com/trending/rss?geo=${geo}`;
-const GEO_API = 'https://ipapi.co/json/';
-const LS_COUNTRY = 'trending_country';
+const PROXY           = 'https://api.allorigins.win/raw?url=';
+const TRENDS_RSS      = geo => `https://trends.google.com/trending/rss?geo=${geo}`;
+const GEO_API         = 'https://ipapi.co/json/';
+const POLLINATIONS_AUTH = 'https://enter.pollinations.ai/authorize';
+const POLLINATIONS_API  = 'https://gen.pollinations.ai/v1/chat/completions';
+const LS_COUNTRY      = 'trending_country';
+const LS_LANG         = 'trending_lang';
+const LS_POLLEN_KEY   = 'pollinations_key';
+const LANG_NAMES      = { en:'English', de:'German', es:'Spanish', fr:'French', it:'Italian', zh:'Chinese' };
 
-const countrySelect = document.getElementById('countrySelect');
-const refreshBtn    = document.getElementById('refreshBtn');
-const loader        = document.getElementById('loader');
-const errorDiv      = document.getElementById('error');
-const trendsGrid    = document.getElementById('trendsGrid');
-const meta          = document.getElementById('meta');
-const updatedAt     = document.getElementById('updatedAt');
-const detectedBadge = document.getElementById('detectedBadge');
+const countrySelect   = document.getElementById('countrySelect');
+const langSelect      = document.getElementById('langSelect');
+const refreshBtn      = document.getElementById('refreshBtn');
+const loader          = document.getElementById('loader');
+const errorDiv        = document.getElementById('error');
+const trendsGrid      = document.getElementById('trendsGrid');
+const meta            = document.getElementById('meta');
+const updatedAt       = document.getElementById('updatedAt');
+const detectedBadge   = document.getElementById('detectedBadge');
+const connectBtn      = document.getElementById('connectBtn');
+const connectedBadge  = document.getElementById('connectedBadge');
+const disconnectBtn   = document.getElementById('disconnectBtn');
+
+// --- Auth ---
+
+function updateAuthUI() {
+  const hasKey = !!localStorage.getItem(LS_POLLEN_KEY);
+  connectBtn.hidden    = hasKey;
+  connectedBadge.hidden = !hasKey;
+}
+
+function handleIncomingKey() {
+  const fragment = new URLSearchParams(location.hash.slice(1));
+  const key = fragment.get('api_key');
+  if (key) {
+    localStorage.setItem(LS_POLLEN_KEY, key);
+    history.replaceState(null, '', location.pathname);
+  }
+}
+
+connectBtn.addEventListener('click', () => {
+  const params = new URLSearchParams({ redirect_url: location.href });
+  window.location.href = `${POLLINATIONS_AUTH}?${params}`;
+});
+
+disconnectBtn.addEventListener('click', () => {
+  localStorage.removeItem(LS_POLLEN_KEY);
+  updateAuthUI();
+});
+
+// --- Language ---
+
+langSelect.value = localStorage.getItem(LS_LANG) || 'en';
+langSelect.addEventListener('change', () => localStorage.setItem(LS_LANG, langSelect.value));
+
+// --- Trends ---
 
 function showLoader(on) {
   loader.hidden = !on;
@@ -72,6 +115,59 @@ function getText(el, tag, ns) {
   return node ? node.textContent.trim() : '';
 }
 
+async function summarizeTrend(trend, card) {
+  const key = localStorage.getItem(LS_POLLEN_KEY);
+  const btn = card.querySelector('.summarize-btn');
+  const summaryEl = card.querySelector('.ai-summary');
+
+  if (!key) {
+    summaryEl.textContent = 'Connect Pollinations first (button above).';
+    summaryEl.hidden = false;
+    return;
+  }
+
+  const lang = langSelect.value;
+  localStorage.setItem(LS_LANG, lang);
+  const langName = LANG_NAMES[lang];
+  const context = trend.newsTitle ? `Related news: "${trend.newsTitle}" from ${trend.newsSource}.` : '';
+  const prompt = `Write a 2-3 sentence summary in ${langName} explaining why "${trend.name}" is currently trending (approx. ${trend.traffic} searches). ${context} Be informative and neutral.`;
+
+  btn.disabled = true;
+  btn.textContent = '⏳ Generating…';
+
+  try {
+    const res = await fetch(POLLINATIONS_API, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${key}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'openai',
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    if (res.status === 401 || res.status === 403) {
+      localStorage.removeItem(LS_POLLEN_KEY);
+      updateAuthUI();
+      throw new Error('Session expired. Please reconnect.');
+    }
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+
+    const data = await res.json();
+    const text = data.choices?.[0]?.message?.content ?? 'No response.';
+    summaryEl.textContent = text;
+    summaryEl.hidden = false;
+    btn.textContent = '✓ Summarized';
+  } catch (err) {
+    summaryEl.textContent = err.message || 'Failed. Try again.';
+    summaryEl.hidden = false;
+    btn.textContent = '✦ Summarize';
+    btn.disabled = false;
+  }
+}
+
 function renderTrends(items) {
   trendsGrid.innerHTML = '';
   if (!items.length) {
@@ -113,6 +209,17 @@ function renderTrends(items) {
       ${newsBlock}
     `;
 
+    const btn = document.createElement('button');
+    btn.className = 'summarize-btn';
+    btn.textContent = '✦ Summarize';
+    const summaryEl = document.createElement('div');
+    summaryEl.className = 'ai-summary';
+    summaryEl.hidden = true;
+
+    btn.addEventListener('click', () => summarizeTrend({ name, traffic, newsTitle, newsSource }, card));
+
+    card.appendChild(btn);
+    card.appendChild(summaryEl);
     trendsGrid.appendChild(card);
   });
 }
@@ -143,4 +250,6 @@ countrySelect.addEventListener('change', () => {
 });
 refreshBtn.addEventListener('click', loadTrends);
 
+handleIncomingKey();
+updateAuthUI();
 detectCountry().then(loadTrends);

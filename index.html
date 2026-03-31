@@ -16,6 +16,11 @@
     <h1>Trending<span class="accent">.</span></h1>
     <p class="subtitle">Google Trends — real-time recap</p>
 
+    <div id="authArea">
+      <button id="connectBtn">🌸 Connect Pollinations</button>
+      <span id="connectedBadge" hidden>🌸 Connected <button id="disconnectBtn">×</button></span>
+    </div>
+
     <div class="controls">
       <div class="country-wrap">
         <span class="detected-badge" id="detectedBadge" hidden>📍 Auto-detected</span>
@@ -42,6 +47,14 @@
           <option value="SG">🇸🇬 Singapore</option>
         </select>
       </div>
+      <select id="langSelect">
+        <option value="en">🌐 English</option>
+        <option value="de">🇩🇪 Deutsch</option>
+        <option value="es">🇪🇸 Español</option>
+        <option value="fr">🇫🇷 Français</option>
+        <option value="it">🇮🇹 Italiano</option>
+        <option value="zh">🇹🇼 中文</option>
+      </select>
       <button id="refreshBtn">↻ Refresh</button>
     </div>
 
