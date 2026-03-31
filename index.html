@@ -72,6 +72,49 @@
     <div class="trends-grid" id="trendsGrid"></div>
   </div>
 
+  <!-- Explore modal -->
+  <div id="modal" hidden>
+    <div class="modal-backdrop" id="modalBackdrop"></div>
+    <div class="modal-panel">
+      <div class="modal-header">
+        <div class="modal-trend-info">
+          <div class="modal-trend-name" id="modalTrendName"></div>
+          <div class="modal-traffic" id="modalTraffic"></div>
+        </div>
+        <button class="modal-close" id="modalClose">×</button>
+      </div>
+      <div class="modal-body">
+
+        <!-- Step 2: Web Research -->
+        <div class="modal-step-section">
+          <div class="step-header">
+            <span class="step-badge">2</span>
+            <span class="step-title">Web Research</span>
+          </div>
+          <button class="step-action-btn" id="step2Btn">🔍 Search the Web</button>
+          <div class="step-loader" id="step2Loader" hidden>
+            <div class="spinner"></div><span>Searching the web…</span>
+          </div>
+          <div class="step-result" id="step2Result" hidden></div>
+        </div>
+
+        <!-- Step 3: Write Article -->
+        <div class="modal-step-section" id="step3Section" hidden>
+          <div class="step-header">
+            <span class="step-badge">3</span>
+            <span class="step-title">Write Article</span>
+          </div>
+          <button class="step-action-btn article-btn" id="step3Btn">✍️ Write Article</button>
+          <div class="step-loader" id="step3Loader" hidden>
+            <div class="spinner"></div><span>Writing article…</span>
+          </div>
+          <div class="step-result article-result" id="step3Result" hidden></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
   <script src="app.js"></script>
 </body>
 </html>

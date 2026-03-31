@@ -1,31 +1,46 @@
-const PROXY           = 'https://corsproxy.io/?url=';
-const TRENDS_RSS      = geo => `https://trends.google.com/trending/rss?geo=${geo}`;
-const GEO_API         = 'https://ipapi.co/json/';
+const PROXY             = 'https://corsproxy.io/?url=';
+const TRENDS_RSS        = geo => `https://trends.google.com/trending/rss?geo=${geo}`;
+const GEO_API           = 'https://ipapi.co/json/';
 const POLLINATIONS_AUTH = 'https://enter.pollinations.ai/authorize';
 const POLLINATIONS_API  = 'https://gen.pollinations.ai/v1/chat/completions';
-const LS_COUNTRY      = 'trending_country';
-const LS_LANG         = 'trending_lang';
-const LS_POLLEN_KEY   = 'pollinations_key';
-const LANG_NAMES      = { en:'English', de:'German', es:'Spanish', fr:'French', it:'Italian', zh:'Chinese' };
+const LS_COUNTRY        = 'trending_country';
+const LS_LANG           = 'trending_lang';
+const LS_POLLEN_KEY     = 'pollinations_key';
+const LANG_NAMES        = { en:'English', de:'German', es:'Spanish', fr:'French', it:'Italian', zh:'Chinese' };
 
-const countrySelect   = document.getElementById('countrySelect');
-const langSelect      = document.getElementById('langSelect');
-const refreshBtn      = document.getElementById('refreshBtn');
-const loader          = document.getElementById('loader');
-const errorDiv        = document.getElementById('error');
-const trendsGrid      = document.getElementById('trendsGrid');
-const meta            = document.getElementById('meta');
-const updatedAt       = document.getElementById('updatedAt');
-const detectedBadge   = document.getElementById('detectedBadge');
-const connectBtn      = document.getElementById('connectBtn');
-const connectedBadge  = document.getElementById('connectedBadge');
-const disconnectBtn   = document.getElementById('disconnectBtn');
+// --- DOM refs ---
+
+const countrySelect  = document.getElementById('countrySelect');
+const langSelect     = document.getElementById('langSelect');
+const refreshBtn     = document.getElementById('refreshBtn');
+const loader         = document.getElementById('loader');
+const errorDiv       = document.getElementById('error');
+const trendsGrid     = document.getElementById('trendsGrid');
+const meta           = document.getElementById('meta');
+const updatedAt      = document.getElementById('updatedAt');
+const detectedBadge  = document.getElementById('detectedBadge');
+const connectBtn     = document.getElementById('connectBtn');
+const connectedBadge = document.getElementById('connectedBadge');
+const disconnectBtn  = document.getElementById('disconnectBtn');
+
+const modal          = document.getElementById('modal');
+const modalBackdrop  = document.getElementById('modalBackdrop');
+const modalClose     = document.getElementById('modalClose');
+const modalTrendName = document.getElementById('modalTrendName');
+const modalTraffic   = document.getElementById('modalTraffic');
+const step2Btn       = document.getElementById('step2Btn');
+const step2Loader    = document.getElementById('step2Loader');
+const step2Result    = document.getElementById('step2Result');
+const step3Section   = document.getElementById('step3Section');
+const step3Btn       = document.getElementById('step3Btn');
+const step3Loader    = document.getElementById('step3Loader');
+const step3Result    = document.getElementById('step3Result');
 
 // --- Auth ---
 
 function updateAuthUI() {
   const hasKey = !!localStorage.getItem(LS_POLLEN_KEY);
-  connectBtn.hidden    = hasKey;
+  connectBtn.hidden     = hasKey;
   connectedBadge.hidden = !hasKey;
 }
 
@@ -73,15 +88,11 @@ function clearError() {
 
 async function detectCountry() {
   const saved = localStorage.getItem(LS_COUNTRY);
-  if (saved) {
-    setCountry(saved, false);
-    return;
-  }
+  if (saved) { setCountry(saved, false); return; }
   try {
-    const res = await fetch(GEO_API);
+    const res  = await fetch(GEO_API);
     const data = await res.json();
-    const code = data.country_code || 'US';
-    setCountry(code, true);
+    setCountry(data.country_code || 'US', true);
   } catch {
     setCountry('US', false);
   }
@@ -106,10 +117,8 @@ async function fetchTrends(geo) {
     const res = await fetch(`${PROXY}${url}`, { signal: controller.signal });
     if (!res.ok) throw new Error(`Failed to fetch trends (HTTP ${res.status})`);
     const text = await res.text();
-    const parser = new DOMParser();
-    const xml = parser.parseFromString(text, 'application/xml');
-    const parseErr = xml.querySelector('parsererror');
-    if (parseErr) throw new Error('Could not parse trends data.');
+    const xml  = new DOMParser().parseFromString(text, 'application/xml');
+    if (xml.querySelector('parsererror')) throw new Error('Could not parse trends data.');
     return xml.querySelectorAll('item');
   } catch (err) {
     if (err.name === 'AbortError') throw new Error('Request timed out. Try refreshing.');
@@ -124,58 +133,167 @@ function getText(el, tag, ns) {
   return node ? node.textContent.trim() : '';
 }
 
-async function summarizeTrend(trend, card) {
-  const key = localStorage.getItem(LS_POLLEN_KEY);
-  const btn = card.querySelector('.summarize-btn');
-  const summaryEl = card.querySelector('.ai-summary');
+// --- Markdown renderer ---
 
-  if (!key) {
-    summaryEl.textContent = 'Connect Pollinations first (button above).';
-    summaryEl.hidden = false;
-    return;
+function fmt(text) {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g,     '<em>$1</em>');
+}
+
+function md2html(md) {
+  const lines = md
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .split('\n');
+
+  const out = [];
+  let inList = false;
+
+  function openList()  { if (!inList) { out.push('<ul>'); inList = true; } }
+  function closeList() { if (inList)  { out.push('</ul>'); inList = false; } }
+
+  for (const raw of lines) {
+    const line = raw.trimEnd();
+    let m;
+    if      ((m = line.match(/^### (.+)/)))    { closeList(); out.push(`<h3>${fmt(m[1])}</h3>`); }
+    else if ((m = line.match(/^## (.+)/)))     { closeList(); out.push(`<h2>${fmt(m[1])}</h2>`); }
+    else if ((m = line.match(/^# (.+)/)))      { closeList(); out.push(`<h1>${fmt(m[1])}</h1>`); }
+    else if ((m = line.match(/^[*-] (.+)/)))   { openList();  out.push(`<li>${fmt(m[1])}</li>`); }
+    else if ((m = line.match(/^\d+\. (.+)/)))  { openList();  out.push(`<li>${fmt(m[1])}</li>`); }
+    else if (line.trim() === '')               { closeList(); }
+    else                                       { closeList(); out.push(`<p>${fmt(line)}</p>`); }
   }
+  closeList();
+  return out.join('\n');
+}
 
-  const lang = langSelect.value;
-  localStorage.setItem(LS_LANG, lang);
+// --- Pollinations call ---
+
+async function callAI(model, prompt) {
+  const key = localStorage.getItem(LS_POLLEN_KEY);
+  if (!key) throw new Error('Connect Pollinations first (button above).');
+
+  const res = await fetch(POLLINATIONS_API, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model, messages: [{ role: 'user', content: prompt }] })
+  });
+
+  if (res.status === 401 || res.status === 403) {
+    localStorage.removeItem(LS_POLLEN_KEY);
+    updateAuthUI();
+    throw new Error('Session expired. Please reconnect Pollinations.');
+  }
+  if (!res.ok) throw new Error(`API error ${res.status}`);
+
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content ?? 'No response.';
+}
+
+// --- Modal ---
+
+let currentTrend = null;
+
+function openModal(trend) {
+  currentTrend = trend;
+  modalTrendName.textContent = trend.name;
+  modalTraffic.textContent   = trend.traffic ? `${trend.traffic} searches` : '';
+
+  step2Btn.disabled   = false;
+  step2Btn.textContent = '🔍 Search the Web';
+  step2Loader.hidden  = true;
+  step2Result.hidden  = true;
+  step2Result.innerHTML = '';
+
+  step3Section.hidden = true;
+  step3Btn.disabled   = false;
+  step3Btn.textContent = '✍️ Write Article';
+  step3Loader.hidden  = true;
+  step3Result.hidden  = true;
+  step3Result.innerHTML = '';
+
+  modal.hidden = false;
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+  modal.hidden = true;
+  document.body.style.overflow = '';
+  currentTrend = null;
+}
+
+modalBackdrop.addEventListener('click', closeModal);
+modalClose.addEventListener('click', closeModal);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+// Step 2 — web research
+
+step2Btn.addEventListener('click', async () => {
+  if (!currentTrend) return;
+  const lang     = langSelect.value;
   const langName = LANG_NAMES[lang];
-  const context = trend.newsTitle ? `Related news: "${trend.newsTitle}" from ${trend.newsSource}.` : '';
-  const prompt = `Write a 2-3 sentence summary in ${langName} explaining why "${trend.name}" is currently trending (approx. ${trend.traffic} searches). ${context} Be informative and neutral.`;
+  const { name, traffic, newsTitle, newsSource } = currentTrend;
+  const context  = newsTitle ? ` Related news: "${newsTitle}" (${newsSource}).` : '';
+  const prompt   =
+    `Search the web and write a detailed summary in ${langName} about why "${name}" is currently trending` +
+    (traffic ? ` (approx. ${traffic} searches)` : '') + `.${context} Cover: what it is, who's involved, why it's trending right now, and the latest key facts. Be factual and comprehensive.`;
 
-  btn.disabled = true;
-  btn.textContent = '⏳ Generating…';
+  step2Btn.disabled    = true;
+  step2Btn.textContent = '⏳ Searching…';
+  step2Loader.hidden   = false;
+  step2Result.hidden   = true;
+  step3Section.hidden  = true;
 
   try {
-    const res = await fetch(POLLINATIONS_API, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${key}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'perplexity-fast',
-        messages: [{ role: 'user', content: prompt }]
-      })
-    });
-
-    if (res.status === 401 || res.status === 403) {
-      localStorage.removeItem(LS_POLLEN_KEY);
-      updateAuthUI();
-      throw new Error('Session expired. Please reconnect.');
-    }
-    if (!res.ok) throw new Error(`API error ${res.status}`);
-
-    const data = await res.json();
-    const text = data.choices?.[0]?.message?.content ?? 'No response.';
-    summaryEl.textContent = text;
-    summaryEl.hidden = false;
-    btn.textContent = '✓ Summarized';
+    const text = await callAI('perplexity-fast', prompt);
+    step2Result.innerHTML = md2html(text);
+    step2Result.hidden    = false;
+    step2Btn.textContent  = '✓ Done';
+    step3Section.hidden   = false;
   } catch (err) {
-    summaryEl.textContent = err.message || 'Failed. Try again.';
-    summaryEl.hidden = false;
-    btn.textContent = '✦ Summarize';
-    btn.disabled = false;
+    step2Result.innerHTML = `<p class="result-error">${err.message}</p>`;
+    step2Result.hidden    = false;
+    step2Btn.textContent  = '🔍 Search the Web';
+    step2Btn.disabled     = false;
+  } finally {
+    step2Loader.hidden = true;
   }
-}
+});
+
+// Step 3 — write article
+
+step3Btn.addEventListener('click', async () => {
+  if (!currentTrend) return;
+  const lang     = langSelect.value;
+  const langName = LANG_NAMES[lang];
+  const { name } = currentTrend;
+  const research = step2Result.innerText;
+  const prompt   =
+    `Based on this research about "${name}":\n\n${research}\n\n` +
+    `Write a comprehensive, engaging article in ${langName} about "${name}". Structure it with:\n` +
+    `- A compelling headline\n- An introduction paragraph\n- 2-3 main sections with subheadings\n- A conclusion\n\nMake it informative and well-written.`;
+
+  step3Btn.disabled    = true;
+  step3Btn.textContent = '⏳ Writing…';
+  step3Loader.hidden   = false;
+  step3Result.hidden   = true;
+
+  try {
+    const text = await callAI('openai', prompt);
+    step3Result.innerHTML = md2html(text);
+    step3Result.hidden    = false;
+    step3Btn.textContent  = '✓ Done';
+  } catch (err) {
+    step3Result.innerHTML = `<p class="result-error">${err.message}</p>`;
+    step3Result.hidden    = false;
+    step3Btn.textContent  = '✍️ Write Article';
+    step3Btn.disabled     = false;
+  } finally {
+    step3Loader.hidden = true;
+  }
+});
+
+// --- Render trends ---
 
 function renderTrends(items) {
   trendsGrid.innerHTML = '';
@@ -219,19 +337,15 @@ function renderTrends(items) {
     `;
 
     const btn = document.createElement('button');
-    btn.className = 'summarize-btn';
-    btn.textContent = '✦ Summarize';
-    const summaryEl = document.createElement('div');
-    summaryEl.className = 'ai-summary';
-    summaryEl.hidden = true;
-
-    btn.addEventListener('click', () => summarizeTrend({ name, traffic, newsTitle, newsSource }, card));
-
+    btn.className   = 'explore-btn';
+    btn.textContent = '✦ Explore';
+    btn.addEventListener('click', () => openModal({ name, traffic, newsTitle, newsSource, newsUrl }));
     card.appendChild(btn);
-    card.appendChild(summaryEl);
     trendsGrid.appendChild(card);
   });
 }
+
+// --- Load ---
 
 async function loadTrends() {
   const geo = countrySelect.value;
@@ -253,10 +367,7 @@ async function loadTrends() {
   }
 }
 
-countrySelect.addEventListener('change', () => {
-  detectedBadge.hidden = true;
-  loadTrends();
-});
+countrySelect.addEventListener('change', () => { detectedBadge.hidden = true; loadTrends(); });
 refreshBtn.addEventListener('click', loadTrends);
 
 handleIncomingKey();

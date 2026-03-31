@@ -134,6 +134,7 @@ button#refreshBtn:disabled { opacity: 0.4; cursor: not-allowed; }
   border-top-color: #fb923c;
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -167,7 +168,6 @@ button#refreshBtn:disabled { opacity: 0.4; cursor: not-allowed; }
   flex-direction: column;
   gap: 0.6rem;
   transition: border-color 0.2s, transform 0.15s;
-  cursor: default;
 }
 .trend-card:hover {
   border-color: rgba(251,146,60,0.3);
@@ -220,7 +220,7 @@ button#refreshBtn:disabled { opacity: 0.4; cursor: not-allowed; }
 }
 
 .news-link {
-  display: block;
+  display: -webkit-box;
   font-size: 0.78rem;
   color: rgba(255,255,255,0.45);
   text-decoration: none;
@@ -229,7 +229,6 @@ button#refreshBtn:disabled { opacity: 0.4; cursor: not-allowed; }
   padding-top: 0.5rem;
   transition: color 0.2s;
   overflow: hidden;
-  display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
 }
@@ -282,10 +281,11 @@ button#refreshBtn:disabled { opacity: 0.4; cursor: not-allowed; }
 }
 #disconnectBtn:hover { color: rgba(255,255,255,0.7); }
 
-/* Summarize button */
-.summarize-btn {
-  margin-top: 0.75rem;
-  background: linear-gradient(135deg, #7c3aed, #4f46e5);
+/* Explore button (card) */
+.explore-btn {
+  margin-top: auto;
+  padding-top: 0.75rem;
+  background: linear-gradient(135deg, #f97316, #ea580c);
   color: #fff;
   border: none;
   border-radius: 6px;
@@ -295,18 +295,203 @@ button#refreshBtn:disabled { opacity: 0.4; cursor: not-allowed; }
   font-family: inherit;
   transition: opacity 0.2s;
   display: block;
+  width: 100%;
 }
-.summarize-btn:hover:not(:disabled) { opacity: 0.85; }
-.summarize-btn:disabled { opacity: 0.5; cursor: default; }
+.explore-btn:hover { opacity: 0.85; }
 
-/* AI summary block */
-.ai-summary {
-  margin-top: 0.6rem;
-  padding: 0.65rem 0.8rem;
-  background: rgba(124, 58, 237, 0.08);
-  border-left: 3px solid #7c3aed;
-  border-radius: 0 6px 6px 0;
+/* =====================
+   Modal
+   ===================== */
+
+#modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(4px);
+}
+
+.modal-panel {
+  position: relative;
+  z-index: 1;
+  background: #14142a;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 18px;
+  width: 100%;
+  max-width: 680px;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.6);
+}
+
+.modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  flex-shrink: 0;
+}
+
+.modal-trend-name {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #f1f1f1;
+  line-height: 1.3;
+}
+
+.modal-traffic {
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.35);
+  margin-top: 0.2rem;
+}
+
+.modal-close {
+  background: rgba(255,255,255,0.07);
+  border: none;
+  color: rgba(255,255,255,0.5);
+  font-size: 1.2rem;
+  line-height: 1;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+  transition: background 0.2s, color 0.2s;
+}
+.modal-close:hover { background: rgba(255,255,255,0.12); color: #fff; }
+
+.modal-body {
+  overflow-y: auto;
+  padding: 1.25rem 1.5rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Step sections */
+.modal-step-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.step-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.step-badge {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #fb923c, #ea580c);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.step-title {
   font-size: 0.82rem;
-  line-height: 1.55;
-  color: rgba(255,255,255,0.82);
+  font-weight: 600;
+  color: rgba(255,255,255,0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.step-action-btn {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: #e0e0e0;
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0.6rem 1.1rem;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+  align-self: flex-start;
+}
+.step-action-btn:hover:not(:disabled) {
+  background: rgba(255,255,255,0.1);
+  border-color: rgba(255,255,255,0.2);
+}
+.step-action-btn.article-btn {
+  background: rgba(124,58,237,0.15);
+  border-color: rgba(124,58,237,0.3);
+  color: #c4b5fd;
+}
+.step-action-btn.article-btn:hover:not(:disabled) {
+  background: rgba(124,58,237,0.25);
+  border-color: rgba(124,58,237,0.5);
+}
+.step-action-btn:disabled { opacity: 0.5; cursor: default; }
+
+.step-loader {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.82rem;
+  color: rgba(255,255,255,0.4);
+}
+
+/* Step results */
+.step-result {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 10px;
+  padding: 1rem 1.1rem;
+  font-size: 0.875rem;
+  line-height: 1.65;
+  color: rgba(255,255,255,0.8);
+}
+
+.step-result p { margin-bottom: 0.65rem; }
+.step-result p:last-child { margin-bottom: 0; }
+.step-result h1, .step-result h2, .step-result h3 {
+  color: #f1f1f1;
+  margin: 1rem 0 0.4rem;
+  font-weight: 600;
+}
+.step-result h1 { font-size: 1.05rem; }
+.step-result h2 { font-size: 0.95rem; }
+.step-result h3 { font-size: 0.875rem; }
+.step-result ul {
+  padding-left: 1.2rem;
+  margin-bottom: 0.65rem;
+}
+.step-result li { margin-bottom: 0.3rem; }
+.step-result strong { color: #f1f1f1; font-weight: 600; }
+
+.article-result {
+  border-color: rgba(124,58,237,0.2);
+  background: rgba(124,58,237,0.05);
+}
+.article-result h1, .article-result h2, .article-result h3 {
+  color: #c4b5fd;
+}
+
+.result-error {
+  color: #f87171 !important;
 }
