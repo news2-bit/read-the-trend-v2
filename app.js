@@ -1,4 +1,4 @@
-const PROXY           = 'https://api.allorigins.win/raw?url=';
+const PROXY           = 'https://corsproxy.io/?url=';
 const TRENDS_RSS      = geo => `https://trends.google.com/trending/rss?geo=${geo}`;
 const GEO_API         = 'https://ipapi.co/json/';
 const POLLINATIONS_AUTH = 'https://enter.pollinations.ai/authorize';
