@@ -5,6 +5,7 @@ const POLLINATIONS_AUTH = 'https://enter.pollinations.ai/authorize';
 const POLLINATIONS_API  = 'https://gen.pollinations.ai/v1/chat/completions';
 const LS_COUNTRY        = 'trending_country';
 const LS_LANG           = 'trending_lang';
+const LS_MODEL          = 'trending_model';
 const LS_POLLEN_KEY     = 'pollinations_key';
 const LANG_NAMES        = { en:'English', de:'German', es:'Spanish', fr:'French', it:'Italian', zh:'Chinese' };
 
@@ -19,6 +20,7 @@ const trendsGrid     = document.getElementById('trendsGrid');
 const meta           = document.getElementById('meta');
 const updatedAt      = document.getElementById('updatedAt');
 const detectedBadge  = document.getElementById('detectedBadge');
+const modelSelect    = document.getElementById('modelSelect');
 const connectBtn     = document.getElementById('connectBtn');
 const connectedBadge = document.getElementById('connectedBadge');
 const disconnectBtn  = document.getElementById('disconnectBtn');
@@ -67,6 +69,9 @@ disconnectBtn.addEventListener('click', () => {
 
 langSelect.value = localStorage.getItem(LS_LANG) || 'en';
 langSelect.addEventListener('change', () => localStorage.setItem(LS_LANG, langSelect.value));
+
+modelSelect.value = localStorage.getItem(LS_MODEL) || 'perplexity-fast';
+modelSelect.addEventListener('change', () => localStorage.setItem(LS_MODEL, modelSelect.value));
 
 // --- Trends ---
 
@@ -245,7 +250,7 @@ step2Btn.addEventListener('click', async () => {
   step3Section.hidden  = true;
 
   try {
-    const text = await callAI('perplexity-fast', prompt);
+    const text = await callAI(modelSelect.value, prompt);
     step2Result.innerHTML = md2html(text);
     step2Result.hidden    = false;
     step2Btn.textContent  = '✓ Done';
@@ -279,7 +284,7 @@ step3Btn.addEventListener('click', async () => {
   step3Result.hidden   = true;
 
   try {
-    const text = await callAI('openai', prompt);
+    const text = await callAI(modelSelect.value, prompt);
     step3Result.innerHTML = md2html(text);
     step3Result.hidden    = false;
     step3Btn.textContent  = '✓ Done';
